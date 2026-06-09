@@ -1,0 +1,9 @@
+anthropic
+requests
+pandas
+ta
+matplotlib
+mplfinance
+python-dotenv
+yfinance
+tweepy
