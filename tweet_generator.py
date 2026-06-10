@@ -1,4 +1,4 @@
- """
+"""
 tweet_generator.py
 Generates a short tweet for Twitter/X using Claude API.
 """
@@ -17,7 +17,7 @@ def _safe(value, fmt=None, fallback="N/A"):
         return fallback
 
 
-def generate_tweet(data: dict, indicators: dict) -> str:
+def generate_tweet(data, indicators):
     client   = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     ticker   = data.get("ticker", {})
     fg       = data.get("fear_greed", {})
@@ -33,26 +33,26 @@ def generate_tweet(data: dict, indicators: dict) -> str:
     fg_val   = fg.get("value")
     fg_label = fg.get("label", "")
 
-    ema_status  = "EMA20 > EMA50 ✅" if ema20 > ema50 else "EMA20 < EMA50 ⚠️"
+    ema_status  = "EMA20 above EMA50 (bullish)" if ema20 > ema50 else "EMA20 below EMA50 (bearish)"
     patreon_url = os.getenv("PATREON_URL", "patreon.com/yourpage")
 
-    prompt = f"""Write a single Bitcoin tweet for Twitter/X. Today is {date_str}.
-
-Market data:
-- Price: ${_safe(price, ',.0f')} ({_safe(pct, '+.2f')}% 24h)
-- RSI(14): {_safe(rsi, '.1f')}
-- {ema_status}
-- BB Upper: ${_safe(bb_upper, ',.0f')} | BB Lower: ${_safe(bb_lower, ',.0f')}
-- Fear & Greed: {_safe(fg_val)} ({fg_label})
-
-Rules:
-- Write ONLY the tweet body — no explanations, no quotes
-- Maximum 200 characters for the body
-- Start with BTC price and % change
-- Include 1 key technical insight
-- End with one short directional outlook
-- Professional but punchy — crypto Twitter style
-- No markdown, no asterisks, emojis are fine"""
+    prompt = (
+        "Write a single Bitcoin tweet for Twitter/X. Today is " + date_str + ".\n\n"
+        "Market data:\n"
+        "- Price: $" + _safe(price, ",.0f") + " (" + _safe(pct, "+.2f") + "% 24h)\n"
+        "- RSI(14): " + _safe(rsi, ".1f") + "\n"
+        "- " + ema_status + "\n"
+        "- BB Upper: $" + _safe(bb_upper, ",.0f") + " | BB Lower: $" + _safe(bb_lower, ",.0f") + "\n"
+        "- Fear & Greed: " + _safe(fg_val) + " (" + fg_label + ")\n\n"
+        "Rules:\n"
+        "- Write ONLY the tweet body, no explanations, no quotes\n"
+        "- Maximum 200 characters for the body\n"
+        "- Start with BTC price and % change\n"
+        "- Include 1 key technical insight\n"
+        "- End with one short directional outlook\n"
+        "- Professional but punchy, crypto Twitter style\n"
+        "- No markdown, no asterisks, emojis are fine"
+    )
 
     message = client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -62,11 +62,10 @@ Rules:
 
     body     = message.content[0].text.strip()
     hashtags = "#Bitcoin #BTC #Crypto #CryptoAnalysis"
-    cta      = f"Full analysis 👇\n{patreon_url}"
-    tweet    = f"{body}\n\n{cta}\n\n{hashtags}"
+    cta      = "Full analysis below\n" + patreon_url
+    tweet    = body + "\n\n" + cta + "\n\n" + hashtags
 
     if len(tweet) > 280:
         tweet = tweet[:277] + "..."
 
     return tweet
-
