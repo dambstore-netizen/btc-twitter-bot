@@ -34,20 +34,36 @@ def get_ohlcv(symbol="BTC-USD", period="90d", interval="1d"):
 def get_24h_ticker(symbol="BTC-USD"):
     """Get 24h price stats from Yahoo Finance."""
     try:
-        hist = yf.Ticker(symbol).history(period="2d", interval="1d")
+        ticker = yf.Ticker(symbol)
+
+        # Use 5d daily to ensure at least 2 complete candles
+        hist = ticker.history(period="5d", interval="1d")
         if len(hist) < 2:
             return {}
+
         cur   = hist.iloc[-1]
         prev  = hist.iloc[-2]
         price = float(cur["Close"])
         pct   = (price - float(prev["Close"])) / float(prev["Close"]) * 100
+
+        # Use 1d intraday for accurate today high/low/volume
+        intra = ticker.history(period="1d", interval="1h")
+        if not intra.empty:
+            high_24h   = float(intra["High"].max())
+            low_24h    = float(intra["Low"].min())
+            volume_btc = float(intra["Volume"].sum())
+        else:
+            high_24h   = float(cur["High"])
+            low_24h    = float(cur["Low"])
+            volume_btc = float(cur["Volume"])
+
         return {
             "price":            price,
             "price_change_pct": round(pct, 2),
-            "volume_btc":       float(cur["Volume"]),
-            "volume_usdt":      float(cur["Volume"]) * price,
-            "high_24h":         float(cur["High"]),
-            "low_24h":          float(cur["Low"]),
+            "volume_btc":       volume_btc,
+            "volume_usdt":      volume_btc * price,
+            "high_24h":         high_24h,
+            "low_24h":          low_24h,
             "open_24h":         float(cur["Open"]),
         }
     except Exception as e:
