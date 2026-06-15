@@ -1,6 +1,6 @@
 """
 main.py — BTC Telegram Analysis Bot
-Sends daily BTC chart + full AI analysis + ready-to-post tweet to Telegram.
+Sends daily BTC chart + full AI analysis + 4-tweet thread to Telegram.
 
 Deploy on Railway as a Cron Job: 0 7 * * *
 """
@@ -50,31 +50,30 @@ def run():
           f"EMA20: ${indicators['ema20']:,.0f}  |  "
           f"EMA50: ${indicators['ema50']:,.0f}")
 
-    # 3. Generate full analysis
+    # 3. Generate full Patreon analysis
     print("\n[3/5] Generating AI analysis (Claude)...")
     from analysis_generator import generate_analysis
     analysis = generate_analysis(data, indicators)
     print(f"       Generated {len(analysis)} characters")
 
-    # 4. Generate tweet
-    print("\n[4/5] Generating tweet text (Claude)...")
-    from tweet_generator import generate_tweet
-    tweet = generate_tweet(data, indicators)
-    print(f"       Generated {len(tweet)} characters")
+    # 4. Generate 4-tweet thread
+    print("\n[4/5] Generating X thread (Claude)...")
+    from tweet_generator import generate_thread
+    tweets = generate_thread(data, indicators)
+    print(f"       Generated {len(tweets)} tweets")
 
     # 5. Send everything to Telegram
     print("\n[5/5] Sending to Telegram...")
-    from telegram_sender import send_analysis, send_tweet_draft
+    from telegram_sender import send_analysis, send_tweet_thread
     send_analysis(chart_path, analysis)
-    send_tweet_draft(tweet)
+    send_tweet_thread(tweets)
 
     print()
     print("=" * 55)
-    print(f"  ✅  Done at {datetime.now().strftime('%H:%M:%S UTC')}")
+    print(f"  Done at {datetime.now().strftime('%H:%M:%S UTC')}")
     print("=" * 55)
     print()
 
 
 if __name__ == "__main__":
     run()
-
