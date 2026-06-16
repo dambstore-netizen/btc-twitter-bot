@@ -99,7 +99,7 @@ RULES:
 - Do not invent data — if something is N/A, skip it"""
 
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=600,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -107,7 +107,6 @@ RULES:
     raw    = message.content[0].text.strip()
     tweets = [t.strip() for t in raw.split("---TWEET---")]
 
-    # Add thread numbering and trim
     result = []
     for i, tweet in enumerate(tweets[:4], 1):
         numbered = f"{tweet}\n\n{i}/4"
@@ -115,7 +114,6 @@ RULES:
             numbered = tweet[:270] + f"\n\n{i}/4"
         result.append(numbered)
 
-    # Pad to 4 if Claude returned fewer
     while len(result) < 4:
         result.append(f"[tweet {len(result)+1}/4 not generated]")
 
