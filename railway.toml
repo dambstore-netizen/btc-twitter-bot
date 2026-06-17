@@ -1,12 +1,3 @@
-# railway.toml
-# Deploy this as a Cron Job service on Railway.
-# Set the cron schedule in the Railway dashboard to: 0 7 * * *
-# (runs every day at 07:00 UTC — adjust timezone offset as needed)
-#
-# Portugal (WET/WEST):
-#   Winter (UTC+0): 0 7 * * *  → runs at 07:00 local
-#   Summer (UTC+1): 0 6 * * *  → runs at 07:00 local
-
 [build]
 builder = "NIXPACKS"
 

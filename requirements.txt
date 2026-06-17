@@ -6,4 +6,3 @@ matplotlib
 mplfinance
 python-dotenv
 yfinance
-tweepy

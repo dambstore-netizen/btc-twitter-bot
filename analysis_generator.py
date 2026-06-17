@@ -27,19 +27,16 @@ def _build_prompt(data: dict, indicators: dict) -> str:
     news        = data.get("news", [])
     date_str    = datetime.now().strftime("%B %d, %Y")
 
-    # Format news items
     news_lines = "\n".join(
         [f"- {n['title']} ({n['source']})" for n in news[:5]]
     ) if news else "No news available at this time."
 
-    # Determine MACD direction
     macd_val  = indicators.get("macd", 0) or 0
     macd_sig  = indicators.get("macd_signal", 0) or 0
     macd_hist = indicators.get("macd_hist", 0) or 0
     macd_direction = "bullish crossover" if macd_val > macd_sig else "bearish crossover"
     macd_momentum  = "increasing" if macd_hist > 0 else "decreasing"
 
-    # RSI zone
     rsi_val = indicators.get("rsi", 50) or 50
     if rsi_val >= 70:
         rsi_zone = "overbought territory"
@@ -48,12 +45,10 @@ def _build_prompt(data: dict, indicators: dict) -> str:
     else:
         rsi_zone = "neutral zone"
 
-    # EMA cross
     ema20 = indicators.get("ema20") or 0
     ema50 = indicators.get("ema50") or 0
     ema_status = "above" if ema20 > ema50 else "below"
 
-    # Funding rate sentiment
     if funding is not None:
         if funding > 0.05:
             funding_sentiment = "heavily long (overheated longs, potential long squeeze risk)"
@@ -129,16 +124,7 @@ Write a professional daily Bitcoin analysis using EXACTLY this structure. Write 
 
 
 def generate_analysis(data: dict, indicators: dict) -> str:
-    """
-    Generate the BTC daily analysis text using Claude API.
-
-    Args:
-        data:       Full dict from fetch_all_data()
-        indicators: Dict from generate_chart()
-
-    Returns:
-        Formatted analysis string ready to send via Telegram
-    """
+    """Generate the BTC daily analysis text using Claude API."""
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
     prompt = _build_prompt(data, indicators)
