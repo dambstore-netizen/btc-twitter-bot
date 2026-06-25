@@ -1,17 +1,13 @@
 """
 main.py — BTC Telegram Analysis Bot
 Sends daily BTC chart + full AI analysis + 4-tweet thread to Telegram.
-
 Deploy on Railway as a Cron Job: 0 7 * * *
 """
-
 import sys
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-
 load_dotenv()
-
 
 def check_env():
     required = ["ANTHROPIC_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
@@ -21,10 +17,8 @@ def check_env():
         print("  Copy .env.example to .env and fill in your keys.")
         sys.exit(1)
 
-
 def run():
     check_env()
-
     print()
     print("=" * 55)
     print(f"  BTC DAILY ANALYSIS BOT")
@@ -35,11 +29,9 @@ def run():
     print("\n[1/5] Fetching market data...")
     from data_fetcher import fetch_all_data
     data = fetch_all_data()
-
     if data["df"] is None or data["df"].empty:
         print("[FATAL] Could not fetch OHLCV data. Aborting.")
         sys.exit(1)
-
     print(f"       OK — {len(data['df'])} candles, {len(data['news'])} news items")
 
     # 2. Generate chart
@@ -50,11 +42,13 @@ def run():
           f"EMA20: ${indicators['ema20']:,.0f}  |  "
           f"EMA50: ${indicators['ema50']:,.0f}")
 
-    # 3. Generate full Patreon analysis
+    # 3. Generate full Patreon analysis + public teaser
     print("\n[3/5] Generating AI analysis (Claude)...")
-    from analysis_generator import generate_analysis
+    from analysis_generator import generate_analysis, generate_teaser
     analysis = generate_analysis(data, indicators)
-    print(f"       Generated {len(analysis)} characters")
+    print(f"       Full analysis: {len(analysis)} characters")
+    teaser = generate_teaser(data, indicators)
+    print(f"       Channel teaser: {len(teaser)} characters")
 
     # 4. Generate 4-tweet thread
     print("\n[4/5] Generating X thread (Claude)...")
@@ -65,7 +59,7 @@ def run():
     # 5. Send everything to Telegram
     print("\n[5/5] Sending to Telegram...")
     from telegram_sender import send_analysis, send_tweet_thread
-    send_analysis(chart_path, analysis)
+    send_analysis(chart_path, analysis, teaser)
     send_tweet_thread(tweets)
 
     print()
@@ -73,7 +67,6 @@ def run():
     print(f"  Done at {datetime.now().strftime('%H:%M:%S UTC')}")
     print("=" * 55)
     print()
-
 
 if __name__ == "__main__":
     run()
