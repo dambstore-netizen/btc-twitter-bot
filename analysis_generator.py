@@ -123,16 +123,90 @@ Write a professional daily Bitcoin analysis using EXACTLY this structure. Write 
     return prompt
 
 
+def _build_teaser_prompt(data: dict, indicators: dict) -> str:
+    """Build a shorter prompt for the public Telegram channel teaser."""
+    ticker     = data.get("ticker", {})
+    fear_greed = data.get("fear_greed", {})
+    funding    = data.get("funding_rate")
+    date_str   = datetime.now().strftime("%B %d, %Y")
+
+    rsi_val = indicators.get("rsi", 50) or 50
+    if rsi_val >= 70:
+        rsi_zone = "overbought"
+    elif rsi_val <= 30:
+        rsi_zone = "oversold"
+    else:
+        rsi_zone = "neutral"
+
+    macd_val = indicators.get("macd", 0) or 0
+    macd_sig = indicators.get("macd_signal", 0) or 0
+    macd_bias = "bullish" if macd_val > macd_sig else "bearish"
+
+    bb_upper = indicators.get("bb_upper") or 0
+    bb_lower = indicators.get("bb_lower") or 0
+
+    prompt = f"""You are writing a SHORT public Telegram post for a free crypto channel called BitMagnet.
+This is a teaser — give real value but leave the full analysis for paid Patreon subscribers.
+
+Today is {date_str}.
+
+MARKET DATA:
+Price: ${_safe(ticker.get('price'), ',.2f')}
+24h Change: {_safe(ticker.get('price_change_pct'), '+.2f')}%
+24h High: ${_safe(ticker.get('high_24h'), ',.2f')}
+24h Low: ${_safe(ticker.get('low_24h'), ',.2f')}
+RSI (14): {_safe(rsi_val, '.1f')} ({rsi_zone})
+MACD bias: {macd_bias}
+BB Upper: ${_safe(bb_upper, ',.2f')}
+BB Lower: ${_safe(bb_lower, ',.2f')}
+Fear & Greed: {_safe(fear_greed.get('value'))}/100 ({_safe(fear_greed.get('label'))})
+Funding Rate: {_safe(funding, '+.4f') if funding is not None else 'N/A'}%
+
+Write in plain text only — no markdown symbols like **, *, #, or backticks.
+Use the emoji headers exactly as shown below.
+Be direct and confident. Sound like a real analyst, not a bot.
+Target length: 120-150 words maximum.
+
+Use EXACTLY this structure:
+
+₿ BTC DAILY SNAPSHOT — {date_str.upper()}
+
+💰 Price: $[price] ([24h change]%)
+
+📊 Quick read:
+[3 bullet points — one each for: trend/structure, RSI+MACD combined read, BB position]
+
+🎯 Levels to watch:
+• Support: $[level]
+• Resistance: $[level]
+
+🧠 Sentiment: [1 sentence on Fear & Greed + funding rate combined]
+
+Full analysis + all signals on Patreon:
+👉 patreon.com/u82300285
+"""
+    return prompt
+
+
 def generate_analysis(data: dict, indicators: dict) -> str:
-    """Generate the BTC daily analysis text using Claude API."""
+    """Generate the full BTC daily analysis text using Claude API."""
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-
     prompt = _build_prompt(data, indicators)
-
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1200,
         messages=[{"role": "user", "content": prompt}]
     )
+    return message.content[0].text
 
+
+def generate_teaser(data: dict, indicators: dict) -> str:
+    """Generate a short public teaser for the Telegram channel."""
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    prompt = _build_teaser_prompt(data, indicators)
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=400,
+        messages=[{"role": "user", "content": prompt}]
+    )
     return message.content[0].text
